@@ -1,0 +1,122 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "2dcd283f91847f5327f889e6c88e2c47",
+    "packages": [
+        {
+            "name": "pomm-project/foundation",
+            "version": "2.0.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/pomm-project/Foundation.git",
+                "reference": "1300fde443e7cb29e498ba31486b04c356cfc2a4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/pomm-project/Foundation/zipball/1300fde443e7cb29e498ba31486b04c356cfc2a4",
+                "reference": "1300fde443e7cb29e498ba31486b04c356cfc2a4",
+                "shasum": ""
+            },
+            "require": {
+                "ext-pgsql": "*",
+                "php": ">=5.4.4",
+                "psr/log": "~1.0"
+            },
+            "require-dev": {
+                "atoum/atoum": "^2.8 || ^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "PommProject\\Foundation\\": "sources/lib"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Grégoire HUBERT",
+                    "email": "hubert.greg@gmail.com",
+                    "homepage": "http://www.coolkeums.org"
+                }
+            ],
+            "description": "Pomm connection manager for Postgresql",
+            "homepage": "http://www.pomm-project.org",
+            "keywords": [
+                "database",
+                "framework",
+                "pomm",
+                "postgresql"
+            ],
+            "support": {
+                "issues": "https://github.com/pomm-project/Foundation/issues",
+                "source": "https://github.com/pomm-project/Foundation/tree/2.0.5"
+            },
+            "time": "2020-12-01T13:19:38+00:00"
+        },
+        {
+            "name": "psr/log",
+            "version": "1.1.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/log.git",
+                "reference": "d49695b909c3b7628b6289db5479a1c204601f11"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/log/zipball/d49695b909c3b7628b6289db5479a1c204601f11",
+                "reference": "d49695b909c3b7628b6289db5479a1c204601f11",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.1.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Log\\": "Psr/Log/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP-FIG",
+                    "homepage": "https://www.php-fig.org/"
+                }
+            ],
+            "description": "Common interface for logging libraries",
+            "homepage": "https://github.com/php-fig/log",
+            "keywords": [
+                "log",
+                "psr",
+                "psr-3"
+            ],
+            "support": {
+                "source": "https://github.com/php-fig/log/tree/1.1.4"
+            },
+            "time": "2021-05-03T11:20:27+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": [],
+    "plugin-api-version": "2.3.0"
+}
