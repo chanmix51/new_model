@@ -1,10 +1,12 @@
 <?php declare(strict_types=1);
 
+use Chanmix51\NewModel\Entity;
 use PommProject\Foundation\Pomm;
-
-use Chanmix51\NewModel\Structure;
 use PommProject\Foundation\ResultIterator;
 use PommProject\Foundation\Where;
+
+use Chanmix51\NewModel\Provider;
+use Chanmix51\NewModel\ProviderImplementation;
 
 $loader = require dirname(dirname(__DIR__)) . "/vendor/autoload.php";
 
@@ -15,69 +17,40 @@ $loader = require dirname(dirname(__DIR__)) . "/vendor/autoload.php";
 * Provider: a Projection combined with a DataSource
 */
 
-class Entity {
+class ThingEntity implements Entity {
     public int $id;
     public string $name;
     public \DateTime $created_at;
+
+    public static function hydrate(array $value): Entity
+    {
+        return new Self($value['id'], $value['name'], $value['created_at']);
+    }
 }
 
-class EntityTable implements Projection {
-    use Projection;
 
-    // needed because Projection
-    public function getDefinition(): String
-    {
-        return "public.test_entity";
-    }
 
-    // needed because projection
-    public function getProjection(): Projection 
-    {
-        return Projection::fromStructure(new EntityStructure());
-    }
-
-}
-class EntityProvider implements Provider, Projection {
-    use Provider;
-    use Projection;
+class ThingProvider implements Provider {
     
-    private Projection $source;
+    use ProviderImplementation;
 
-    public function __construct()
+    public function findWhere(Where $where): ResultIterator
     {
-        $this->source = new EntityTable;
-    }
-
-    // needed because Provider
-    public function find(Where $where):  ResultIterator 
-    {
-        $sql = $this->getDefinition($where);
-        
-        return $this->getSession()->getQueryManager()
-            ->query($sql, $where->getParameters());
-    }
-
-    // needed because Projection
-    public function getDefinition(Where $where): string {
-        $sql = "select {:projection:} from {:relation:} as entity where {:condition:}";
-        $relation = new EntityTable();
-        $sql = strtr($sql,
-        [
-            "{:projection:}" => $this->getProjection(),
-            "{:relation:}" => $relation->getDefinition(),
-            "{:condition}" => $where,
+        $sql = "select {:projection:} from {:source:} as entity where {:condition:}";
+        $sql = strtr($sql, [
+            "{:projection:}" => $this->getProjectionMap()->expand("entity"),
+            "{:source:}" => "public.entity",
+            "{:condition:}" => $where,
         ]);
 
-        return $sql;
+        return $this->getSession()
+            ->getQueryManager()
+            ->query($sql, $where->getValues());
     }
-
-    public function getProjection(): Projection {
-        return $this->source->getProjection();
-    }
-
 }
+
 
 $pomm = new Pomm(['my_database' => ['dsn' => 'pgsql://greg@postgres/greg', 'class:session_builder' => '\Chanmix51\NewModel\SessionBuilder']]);
 $session = $pomm['my_database'];
-$session->getProvider('')
+$result = $session->getProvider('\ThingProvider')->findWhere(new Where);
 
