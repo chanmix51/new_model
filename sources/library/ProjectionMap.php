@@ -10,44 +10,19 @@ class FieldDefinition {
 }
 
 interface ProjectionMap {
-    public static function fromStructure(Structure $structure): Self;
+    /// create a ProjectionMap from a database structure
+    /// create a ProjectionMap definition from a database structure
+    public static function fromStructure(Structure $structure): array;
 
+    /// return the type of the given projection field 
+    public function getType(string $field_name): ?string;
+
+    /// return a field definition 
+    public function getDefinition(string $name): ?string;
+
+    /// does the given field exist?
+    public function fieldExists(string $name): bool;
+
+    /// expand the projection in a SQL statement
     public function expand(?string $alias): string;
-}
-/// example:
-/// SELECT count(pika) as chu FROM …
-/// `count(pika) as chu` is a field definition with
-/// `chu` => field alias
-/// `count(pika)` as field definition
-/// `int` as field type
-trait ProjectionMapImplementation {
-    // field name => field definition
-    private array $projection = [];
-
-    public function getType(string $name): ?string {
-        return isset($this->projection[$name]) ?
-            $this->projection[$name]->type
-            : null;
-    }
-
-    public function getDefinition(string $name): ?string {
-        return isset($this->projection[$name]) ?
-            $this->projection[$name]->definition
-            : null;
-    }
-
-    public function aliasExists(string $name): bool {
-        return isset($this->projection[$name]);
-    }
-
-    public function expand(?string $alias): string {
-        $output = [];
-        $alias = $alias === null ? "" : $alias . ".";
-
-        foreach ($this->projection as $name => $definition) {
-            $output[] = sprintf("%s as %s", $alias . $definition, $name);
-        }
-
-        return join(', ', $output);
-    }
 }

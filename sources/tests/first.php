@@ -1,12 +1,17 @@
 <?php declare(strict_types=1);
 
-use Chanmix51\NewModel\Entity;
 use PommProject\Foundation\Pomm;
 use PommProject\Foundation\ResultIterator;
+use PommProject\Foundation\Session\Session;
 use PommProject\Foundation\Where;
 
+use Chanmix51\NewModel\Entity;
+use Chanmix51\NewModel\ProjectionMap;
+use Chanmix51\NewModel\ProjectionMapImplementation;
 use Chanmix51\NewModel\Provider;
 use Chanmix51\NewModel\ProviderImplementation;
+use Chanmix51\NewModel\SqlSource;
+use Chanmix51\NewModel\Structure;
 
 $loader = require dirname(dirname(__DIR__)) . "/vendor/autoload.php";
 
@@ -22,17 +27,38 @@ class ThingEntity implements Entity {
     public string $name;
     public \DateTime $created_at;
 
+    /// see Entity
     public static function hydrate(array $value): Entity
     {
         return new Self($value['id'], $value['name'], $value['created_at']);
     }
 }
 
+class ThingProjectionMap implements ProjectionMap {
+    use ProjectionMapImplementation;
 
+    public function __construct() {
+        $table = new ThingTable;
+        $this->definition = static::fromStructure($table->getStructure());
+    }
+}
+
+class ThingTable implements SqlSource {
+    public function getStructure(?string $alias): Structure {
+        return (new Structure)
+            ->setField("id", "integer")
+            ->setField("name", "text")
+            ->setField("created_at", "timestamptz");
+    }
+
+    public function getDefinition(): string {
+        return "public.entity";
+    }
+}
 
 class ThingProvider implements Provider {
     
-    use ProviderImplementation;
+    use ProviderImplementation ;
 
     public function findWhere(Where $where): ResultIterator
     {
@@ -46,6 +72,17 @@ class ThingProvider implements Provider {
         return $this->getSession()
             ->getQueryManager()
             ->query($sql, $where->getValues());
+    }
+
+    public function getEntityType(): string
+    {
+        return ThingEntity::class;
+    }
+
+    public function initialize(Session $session)
+    {
+        $this->session = $session;
+        $this->projection = new ThingProjectionMap;
     }
 }
 
