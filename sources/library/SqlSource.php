@@ -2,7 +2,7 @@
 namespace Chanmix51\NewModel;
 
 interface SqlSource {
-    public function getStructure(?string $alias): Structure;
+    public function getStructure(): Structure;
 
     public function getDefinition(): string;
 }

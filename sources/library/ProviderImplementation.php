@@ -2,7 +2,6 @@
 namespace Chanmix51\NewModel;
 
 use PommProject\Foundation\Session\Session;
-use PommProject\Foundation\ResultIterator;
 
 trait ProviderImplementation {
     private Session $session;
@@ -20,10 +19,9 @@ trait ProviderImplementation {
         $session = $this->getSession();
         $class = $this->getEntityType();
         $iterator = $session->getQueryManager()
-            ->query($sql, $parameters)
-            ->registerFilter(function($v) use ($class) { return $class::hydrate($v); });
+            ->query($sql, $parameters);
 
-        return $iterator;
+        return new ResultIterator($iterator, $class);
     }
 
     public function getClientType() {

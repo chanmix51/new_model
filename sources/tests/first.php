@@ -44,7 +44,7 @@ class ThingProjectionMap implements ProjectionMap {
 }
 
 class ThingTable implements SqlSource {
-    public function getStructure(?string $alias): Structure {
+    public function getStructure(): Structure {
         return (new Structure)
             ->setField("id", "integer")
             ->setField("name", "text")
