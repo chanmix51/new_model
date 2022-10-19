@@ -6,6 +6,7 @@ use PommProject\Foundation\Session\Session;
 trait ProviderImplementation {
     private Session $session;
     private ProjectionMap $projection;
+    private array $sources = [];
 
     public function getSession(): Session {
         return $this->session;
@@ -29,8 +30,16 @@ trait ProviderImplementation {
     }
 
     public function getClientIdentifier() {
-        return get_class($this);
+        return Self::class;
     }
 
     public function shutdown() {}
+
+    public function getSource(string $name): SqlSource {
+        if (! array_key_exists($name, $this->sources)) {
+            throw new \LogicException(sprintf("No such source '%s', registered sources are {%s}", $name, join(", ", array_keys($this->sources))));
+        }
+
+        return $this->sources[$name];
+    }
 }

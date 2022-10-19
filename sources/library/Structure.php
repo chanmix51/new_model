@@ -10,7 +10,7 @@ class Structure {
     }
 
     public function setField(string $name, string $type): Self {
-        $this->defintion[$name] = $type;
+        $this->definition[$name] = $type;
 
         return $this;
     }

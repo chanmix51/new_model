@@ -41,7 +41,7 @@ class ResultIterator implements \Iterator, \Countable, \JsonSerializable, \Seeka
 
     public function rewind(): void
     {
-        $this->iterator->rewind;
+        $this->iterator->rewind();
     }
 
     public function count(): int
@@ -54,5 +54,9 @@ class ResultIterator implements \Iterator, \Countable, \JsonSerializable, \Seeka
         throw new \Exception("not yet implemented");
 
         return "";
+    }
+
+    public function isEmpty(): bool {
+        return $this->iterator->isEmpty();
     }
 }

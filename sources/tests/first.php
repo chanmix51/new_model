@@ -1,11 +1,12 @@
 <?php declare(strict_types=1);
+namespace Chanmix51\NewModel\Test;
 
 use PommProject\Foundation\Pomm;
-use PommProject\Foundation\ResultIterator;
 use PommProject\Foundation\Session\Session;
 use PommProject\Foundation\Where;
 
 use Chanmix51\NewModel\Entity;
+use Chanmix51\NewModel\ResultIterator;
 use Chanmix51\NewModel\ProjectionMap;
 use Chanmix51\NewModel\ProjectionMapImplementation;
 use Chanmix51\NewModel\Provider;
@@ -23,9 +24,8 @@ $loader = require dirname(dirname(__DIR__)) . "/vendor/autoload.php";
 */
 
 class ThingEntity implements Entity {
-    public int $id;
-    public string $name;
-    public \DateTime $created_at;
+
+    private function __construct(public int $id, public string $name, public \DateTime $created_at) {}
 
     /// see Entity
     public static function hydrate(array $value): Entity
@@ -39,7 +39,7 @@ class ThingProjectionMap implements ProjectionMap {
 
     public function __construct() {
         $table = new ThingTable;
-        $this->definition = static::fromStructure($table->getStructure());
+        $this->projection = static::fromStructure($table->getStructure());
     }
 }
 
@@ -65,13 +65,11 @@ class ThingProvider implements Provider {
         $sql = "select {:projection:} from {:source:} as entity where {:condition:}";
         $sql = strtr($sql, [
             "{:projection:}" => $this->getProjectionMap()->expand("entity"),
-            "{:source:}" => "public.entity",
+            "{:source:}" => $this->getSource('thing')->getDefinition(),
             "{:condition:}" => $where,
         ]);
 
-        return $this->getSession()
-            ->getQueryManager()
-            ->query($sql, $where->getValues());
+        return $this->query($sql, $where->getValues());
     }
 
     public function getEntityType(): string
@@ -83,11 +81,20 @@ class ThingProvider implements Provider {
     {
         $this->session = $session;
         $this->projection = new ThingProjectionMap;
+        $this->sources = ["thing" => new ThingTable];
     }
 }
 
 
 $pomm = new Pomm(['my_database' => ['dsn' => 'pgsql://greg@postgres/greg', 'class:session_builder' => '\Chanmix51\NewModel\SessionBuilder']]);
 $session = $pomm['my_database'];
-$result = $session->getProvider('\ThingProvider')->findWhere(new Where);
+$result = $session->getProvider(ThingProvider::class)->findWhere(new Where);
+
+if ($result->isEmpty()) {
+    printf("No results\n");
+} else {
+    foreach ($result as $thing) {
+        print_r($thing);
+    }
+}
 
