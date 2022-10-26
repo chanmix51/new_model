@@ -6,10 +6,11 @@ use PommProject\Foundation\Session\Session;
 use PommProject\Foundation\Where;
 
 interface Provider extends ClientInterface {
-    public function findWhere(Where $where): ResultIterator;
+    public function findWhere(Where $where = new Where): ResultIterator;
     public function getProjectionMap(): ProjectionMap;
     public function getEntityType(): string;
     public function initialize(Session $session);
     public function shutdown();
+    public function getSources(): array;
     public function getSource(string $name): SqlSource;
 }

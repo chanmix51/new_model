@@ -42,4 +42,8 @@ trait ProviderImplementation {
 
         return $this->sources[$name];
     }
+
+    public function getSources(): array {
+        return $this->sources;
+    }
 }

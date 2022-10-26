@@ -6,6 +6,7 @@ use PommProject\Foundation\Session\Session;
 use PommProject\Foundation\Where;
 
 use Chanmix51\NewModel\Entity;
+use Chanmix51\NewModel\ProjectionFieldDefinition;
 use Chanmix51\NewModel\ResultIterator;
 use Chanmix51\NewModel\ProjectionMap;
 use Chanmix51\NewModel\ProjectionMapImplementation;
@@ -38,8 +39,7 @@ class ThingProjectionMap implements ProjectionMap {
     use ProjectionMapImplementation;
 
     public function __construct() {
-        $table = new ThingTable;
-        $this->projection = static::fromStructure($table->getStructure());
+        $this->projection = ProjectionFieldDefinition::fromStructure("thing", (new ThingTable)->getStructure());
     }
 }
 
@@ -52,7 +52,7 @@ class ThingTable implements SqlSource {
     }
 
     public function getDefinition(): string {
-        return "public.entity";
+        return "new_model_test.thing";
     }
 }
 
@@ -60,11 +60,12 @@ class ThingProvider implements Provider {
     
     use ProviderImplementation ;
 
-    public function findWhere(Where $where): ResultIterator
+    public function findWhere(Where $where = new Where): ResultIterator
     {
-        $sql = "select {:projection:} from {:source:} as entity where {:condition:}";
+        $sql = "select {:projection:} from {:source:} as thing where {:condition:}";
+        $sources_alias = ['thing' => 'thing'];
         $sql = strtr($sql, [
-            "{:projection:}" => $this->getProjectionMap()->expand("entity"),
+            "{:projection:}" => $this->getProjectionMap()->expand($sources_alias),
             "{:source:}" => $this->getSource('thing')->getDefinition(),
             "{:condition:}" => $where,
         ]);
@@ -86,9 +87,24 @@ class ThingProvider implements Provider {
 }
 
 
+// setup
+$setup_sql = [
+    "drop schema if exists new_model_test cascade",
+    "create schema new_model_test",
+    "create table new_model_test.thing (id serial primary key, name text not null, created_at timestamptz not null default now())",
+    "insert into new_model_test.thing (name) values ('pika'), ('chu')",
+];
 $pomm = new Pomm(['my_database' => ['dsn' => 'pgsql://greg@postgres/greg', 'class:session_builder' => '\Chanmix51\NewModel\SessionBuilder']]);
 $session = $pomm['my_database'];
-$result = $session->getProvider(ThingProvider::class)->findWhere(new Where);
+
+foreach ($setup_sql as $query) {
+    printf("query => '%s'\n", $query);
+    $session->getConnection()->executeAnonymousQuery($query);
+}
+// actual test
+printf("\nPROVIDER TEST RESULTS\n");
+
+$result = $session->getProvider(ThingProvider::class)->findWhere();
 
 if ($result->isEmpty()) {
     printf("No results\n");
@@ -97,4 +113,3 @@ if ($result->isEmpty()) {
         print_r($thing);
     }
 }
-
