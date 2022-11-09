@@ -19,7 +19,7 @@ class ProjectionFieldDefinition {
             );
         }
         $source_alias = $sources_alias[$this->source_name];
-        $output = sprintf("%s as %s", strtr($this->definition, ["**." => $source_alias . "."]), $this->field_name);
+        $output = sprintf("%s as %s", strtr($this->definition, ["**" => $source_alias]), $this->field_name);
 
         return $output;
     }

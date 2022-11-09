@@ -52,7 +52,7 @@ class ThingTable implements SqlSource {
     }
 
     public function getDefinition(): string {
-        return "new_model_test.thing";
+        return "first_test.thing";
     }
 }
 
@@ -89,10 +89,10 @@ class ThingProvider implements Provider {
 
 // setup
 $setup_sql = [
-    "drop schema if exists new_model_test cascade",
-    "create schema new_model_test",
-    "create table new_model_test.thing (id serial primary key, name text not null, created_at timestamptz not null default now())",
-    "insert into new_model_test.thing (name) values ('pika'), ('chu')",
+    "drop schema if exists first_test cascade",
+    "create schema first_test",
+    "create table first_test.thing (id serial primary key, name text not null, created_at timestamptz not null default now())",
+    "insert into first_test.thing (name) values ('pika'), ('chu')",
 ];
 $pomm = new Pomm(['my_database' => ['dsn' => 'pgsql://greg@postgres/greg', 'class:session_builder' => '\Chanmix51\NewModel\SessionBuilder']]);
 $session = $pomm['my_database'];

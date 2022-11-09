@@ -1,120 +1,238 @@
 <?php declare(strict_types=1);
 namespace Chanmix51\NewModel\Test;
 
+use Chanmix51\NewModel\Entity;
+use Chanmix51\NewModel\ProjectionMap;
+use Chanmix51\NewModel\Provider;
+use Chanmix51\NewModel\ProjectionFieldDefinition;
+use Chanmix51\NewModel\ProjectionMapImplementation;
+use Chanmix51\NewModel\ProviderImplementation;
+use Chanmix51\NewModel\ResultIterator;
+use Chanmix51\NewModel\SqlSource;
+use Chanmix51\NewModel\Structure;
+
 use PommProject\Foundation\Pomm;
 use PommProject\Foundation\Session\Session;
 use PommProject\Foundation\Where;
 
-use Chanmix51\NewModel\Entity;
-use Chanmix51\NewModel\ProjectionFieldDefinition;
-use Chanmix51\NewModel\ResultIterator;
-use Chanmix51\NewModel\ProjectionMap;
-use Chanmix51\NewModel\ProjectionMapImplementation;
-use Chanmix51\NewModel\Provider;
-use Chanmix51\NewModel\ProviderImplementation;
-use Chanmix51\NewModel\SqlSource;
-use Chanmix51\NewModel\Structure;
-
 $loader = require dirname(dirname(__DIR__)) . "/vendor/autoload.php";
 
-class TikOwnerTable implements SqlSource
-{
+/*
+ * Test scenario:
+ * Show a short view of a Thing.
+ * Each Thing has an Author and may have multiple Comments. In this case we want
+ * to display the associated ShortAuthor and the last 5 Comments if any.
+ */
+
+ /*
+  * THING
+  */
+class ThingTable implements SqlSource {
     public function getStructure(): Structure {
         return (new Structure)
-            ->setField("tik_owner_id", "integer")
+            ->setField("thing_id", "integer")
             ->setField("name", "text")
+            ->setField("author_id", "int")
+            ->setField("title", "text")
+            ->setField("content", "text")
             ->setField("created_at", "timestamptz");
     }
 
-    public function getDefinition(): string
-    {
-        return "new_model_test.tik_owner";
+    public function getDefinition(): string {
+        return "aggregate_test.thing";
     }
 }
 
-class TikTable implements SqlSource 
-{
-    public function getStructure(): Structure {
-        return (new Structure)
-            ->setField("tik_id", "integer")
-            ->setField("tik_owner_id", "integer")
-            ->setField("value", "integer")
-            ->setField("created_at", "timestamptz");
-    }
+class ShortThingEntity implements Entity {
 
-    public function getDefinition(): string
-    {
-        return "new_model_test.tik";
-    }
-}
+    private function __construct(
+        public int $thing_id,
+        public string $name,
+        public string $title,
+        public \DateTime $created_at,
+        public ShortAuthor $short_author,
+        public array $last_comments,
+        ) {}
 
-class TikOwner implements Entity
-{
-    private function __construct(public int $tik_owner_id, public string $name, public \DateTime $created_at, public int $nb_tik, public int $tik_value_sum, public float $mean_tik_value) {}
-    
+    /// see Entity
     public static function hydrate(array $value): Entity
     {
-        return new Self($value['tik_owner_id'], $value['name'], $value['created_at'], $value['nb_tik'], $value['tik_value_sum'], $value['mean_tik_value']);
+        extract($value);
+
+        return new Self(
+            $thing_id,
+            $name,
+            $title,
+            $created_at,
+            $short_author,
+            $last_comments
+        );
     }
 }
 
-class TikOwnerProjectionMap implements ProjectionMap {
+class ShortThingProjectionMap implements ProjectionMap {
     use ProjectionMapImplementation;
 
     public function __construct() {
-        $this->projection = ProjectionFieldDefinition::fromStructure("tik_owner", (new TikOwnerTable)->getStructure());
-        $this->projection["nb_tik"] = new ProjectionFieldDefinition("tik", "count(**.*)", 'nb_tik', 'int');
-        $this->projection["tik_value_sum"] = new ProjectionFieldDefinition("tik", "sum(**.tik_value)","tik_value_sum", 'int');
-        $this->projection["mean_tik_value"] = new ProjectionFieldDefinition("tik", "avg(**.tik_value)","mean_tik_value", 'float');
+        $this->projection = ProjectionFieldDefinition::fromStructure("thing", (new ThingTable)->getStructure());
+        unset($this->projection['content']);
+        $this
+            ->addField("short_author", "**", "short_author", "author")
+            ->addField("short_comment", "array_agg(**)", "last_comments", "comment[]");
     }
-
 }
 
-class TikProvider implements Provider
-{
+/*
+ * AUTHOR & SHORTAUTHOR
+ */
+class AuthorTable implements SqlSource {
+    public function getStructure(): Structure {
+        return (new Structure)
+            ->setField("author_id", "integer")
+            ->setField("name", "text")
+            ->setField("email", "text");
+    }
+
+    public function getDefinition(): string {
+        return "aggregate_test.author";
+    }
+}
+
+class ShortAuthor implements Entity {
+    private function __construct(
+        public int $author_id,
+        public string $name,
+        ) {}
+
+    public static function hydrate(array $value): Entity
+    {
+        return new Self($value['author_id'], $value['name']);
+    }
+}
+
+class ShortAuthorProjectionMap implements ProjectionMap {
+    use ProjectionMapImplementation;
+
+    public function __construct() {
+        $this->projection = ProjectionFieldDefinition::fromStructure("author", (new AuthorTable)->getStructure());
+        unset($this->projection['email']);
+    }
+}
+
+/*
+ * COMMENT & SHORTCOMMENT
+ */
+
+class CommentTable implements SqlSource {
+    public function getStructure(): Structure {
+        return (new Structure)
+            ->setField("comment_id", "integer")
+            ->setField("thing_id", "integer")
+            ->setField("content", "text")
+            ->setField("created_at", "timestamptz");
+    }
+
+    public function getDefinition(): string {
+        return "aggregate_test.comment";
+    }
+}
+
+class ShortComment implements Entity {
+    private function __construct(
+        public int $comment_id,
+        public int $author_id,
+        public string $reduced_content,
+        ) {}
+
+    public static function hydrate(array $value): Entity
+    {
+        return new Self($value['comment_id'], $value['author_id'], $value['reduced_content']);
+    }
+}
+
+class ShortCommentProjectionMap implements ProjectionMap {
+    use ProjectionMapImplementation;
+
+    public function __construct() {
+        $this->projection = ProjectionFieldDefinition::fromStructure("comment", (new CommentTable)->getStructure());
+        unset($this->projection['content']);
+        $this->projection['reduced_content'] = new ProjectionFieldDefinition('comment', "left(**.content, 5) || '…'", 'reduced_content', 'text');
+    }
+}
+
+// SHORT THING PROVIDER
+class ShortThingProvider implements Provider {
+    
     use ProviderImplementation;
 
-    public function findWhere(Where $where = new Where): ResultIterator
-    {
-        $sql = <<<SQL
-select {:projection:}
-from {:tik_owner:} as tik_owner
-  left outer join {:tik:} as tik using (tik_owner_id)
-where {:where:}
-group by tik_owner_id
-order by tik_owner_id asc
-SQL;
-        $sql = strtr($sql, [
-            "{:projection:}" => $this->getProjectionMap()->expand(["tik_owner" => "tik_owner", "tik" => "tik"]),
-            "{:tik_owner:}" => $this->getSource('tik_owner')->getDefinition(),
-            "{:tik:}" => $this->getSource('tik')->getDefinition(),
-            "{:where:}" => $where,
-        ]);
-
-        return $this->query($sql, $where->getValues());
-    }
+    private ShortAuthorProjectionMap  $short_author_projection;
+    private ShortCommentProjectionMap $short_comment_projection;
 
     public function getEntityType(): string
     {
-        return TikOwner::class;
+        return 'Chanmix51\NewModel\Test\ShortThingEntity';
     }
 
     public function initialize(Session $session)
     {
         $this->session = $session;
-        $this->projection = new TikOwnerProjectionMap;
-        $this->sources = ["tik_owner" => new TikOwnerTable, "tik" => new TikTable];
+
+        $this->sources['author'] = new AuthorTable;
+        $this->sources['comment'] = new CommentTable;
+        $this->sources['thing'] = new ThingTable;
+
+        $this->short_author_projection = new ShortAuthorProjectionMap;
+        $this->short_comment_projection = new ShortCommentProjectionMap;
+        $this->projection = new ShortThingProjectionMap;
+    }
+
+    public function findWhere(Where $where = new Where): ResultIterator
+    {
+        $sql = <<<"SQL"
+with
+  short_author as (
+    select
+      {:short_author_projection:}
+    from {:author:} as author
+  ),
+  short_comment as (
+    select
+      {:short_comment_projection:}
+    from {:comment:} as comment
+  )
+select
+  {:short_thing_projection:}
+from {:thing:} as thing
+  inner join short_author using (author_id)
+  left join short_comment using (thing_id)
+where {:condition:}
+group by thing.thing_id, short_author.*  
+SQL;
+        $source_aliases = ["author" => "author", "comment" => "comment", "thing" => "thing", "short_author" => "short_author", "short_comment" => "short_comment"];
+        $sql = strtr($sql, [
+            '{:short_author_projection:}' => $this->short_author_projection->expand($source_aliases),
+            '{:short_comment_projection:}' => $this->short_comment_projection->expand($source_aliases),
+            '{:author:}' => $this->sources['author']->getDefinition(),
+            '{:comment:}' => $this->sources['comment']->getDefinition(),
+            '{:short_thing_projection:}' => $this->projection->expand($source_aliases),
+            '{:thing:}' => $this->getSource('thing')->getDefinition(),
+            '{:condition:}' => $where,
+        ]);
+
+        return $this->query($sql, $where->getValues());
     }
 }
 
 // setup
 $setup_sql = [
-    "drop schema if exists new_model_test cascade",
-    "create schema new_model_test",
-    "create table new_model_test.tik_owner (tik_owner_id serial primary key, name text not null, created_at timestamptz not null default now())",
-    "insert into new_model_test.tik_owner (name) values ('pika'), ('chu')",
-    "create table new_model_test.tik as select tik_id as tik_id, floor(random() * 2)::int + 1 as tik_owner_id, floor(random() * 100)::int as tik_value from generate_series(1, 100) as pika(tik_id);",
-    "alter table new_model_test.tik add foreign key (tik_owner_id) references new_model_test.tik_owner (tik_owner_id)",
+    "drop schema if exists aggregate_test cascade",
+    "create schema aggregate_test",
+    "create table aggregate_test.author (author_id serial primary key, name text not null, email text not null)",
+    "insert into aggregate_test.author (name, email) values ('one', 'one@internet.com'), ('two', 'two@internet.com')",
+    "create table aggregate_test.thing (thing_id serial primary key, author_id int not null references aggregate_test.author (author_id), name text not null, title text not null, content text, created_at timestamptz not null default now())",
+    "insert into aggregate_test.thing (author_id, name, title, content) values (1, 'pika', 'pika title', 'pika content'), (1, 'chu', 'chu title', 'chu content')",
+    "create table aggregate_test.comment (comment_id serial primary key, author_id int not null references aggregate_test.author (author_id), thing_id int not null references aggregate_test.thing (thing_id), content text, created_at timestamptz not null default now())",
+    "insert into aggregate_test.comment (author_id, thing_id, content) values (2, 1, 'comment 1 on thing 1'), (1, 1, 'response on comment 1 by author 1')",
 ];
 $pomm = new Pomm(['my_database' => ['dsn' => 'pgsql://greg@postgres/greg', 'class:session_builder' => '\Chanmix51\NewModel\SessionBuilder']]);
 $session = $pomm['my_database'];
@@ -126,12 +244,12 @@ foreach ($setup_sql as $query) {
 // actual test
 printf("\nPROVIDER TEST RESULTS\n");
 
-$result = $session->getProvider(TikProvider::class)->findWhere();
+$result = $session->getProvider(ShortThingProvider::class)->findWhere();
 
 if ($result->isEmpty()) {
     printf("No results\n");
 } else {
-    foreach ($result as $tik) {
-        print_r($tik);
+    foreach ($result as $thing) {
+        print_r($thing);
     }
 }

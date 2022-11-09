@@ -13,7 +13,7 @@ trait ProjectionMapImplementation {
         }
 
 
-        return join(', ', $output);
+        return join(",\n", $output);
     }
 
     public function getStructure(): Structure {
@@ -24,5 +24,11 @@ trait ProjectionMapImplementation {
         }
 
         return new Structure($definition);
+    }
+
+    public function addField($source_name, $definition, $field_name, $type): Self {
+        $this->projection[$field_name] = new ProjectionFieldDefinition($source_name, $definition, $field_name, $type);
+        
+        return $this;
     }
 }
